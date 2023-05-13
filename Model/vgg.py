@@ -1,7 +1,9 @@
 import torch
 from torch import nn
 import os
+from torch.cuda.amp import autocast
 class SE_VGG(nn.Module):
+    @autocast()
     def __init__(self):
         super().__init__()
         # define an empty for Conv_ReLU_MaxPool
@@ -30,30 +32,30 @@ class SE_VGG(nn.Module):
         net.append(nn.ReLU())
         net.append(nn.MaxPool2d(kernel_size=2, stride=2))
 
-        # # block 4
-        # net.append(nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, padding=1, stride=1))
-        # net.append(nn.ReLU())
-        # net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, stride=1))
-        # net.append(nn.ReLU())
-        # net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, stride=1))
-        # net.append(nn.ReLU())
-        # net.append(nn.MaxPool2d(kernel_size=2, stride=2))
-        #
-        # # block 5
-        # net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, stride=1))
-        # net.append(nn.ReLU())
-        # net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, stride=1))
-        # net.append(nn.ReLU())
-        # net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, stride=1))
-        # net.append(nn.ReLU())
-        # net.append(nn.MaxPool2d(kernel_size=2, stride=2))
+        # block 4
+        net.append(nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, padding=1, stride=1))
+        net.append(nn.ReLU())
+        net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, stride=1))
+        net.append(nn.ReLU())
+        net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, stride=1))
+        net.append(nn.ReLU())
+        net.append(nn.MaxPool2d(kernel_size=2, stride=2))
+
+        # block 5
+        net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, stride=1))
+        net.append(nn.ReLU())
+        net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, stride=1))
+        net.append(nn.ReLU())
+        net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, stride=1))
+        net.append(nn.ReLU())
+        net.append(nn.MaxPool2d(kernel_size=2, stride=2))
 
         # add net into class property
         self.extract_feature = nn.Sequential(*net)
 
         # define an empty container for Linear operations
         classifier = []
-        classifier.append(nn.Linear(in_features=256*32*56, out_features=4096))
+        classifier.append(nn.Linear(in_features=57344, out_features=4096))
         classifier.append(nn.ReLU())
         classifier.append(nn.Dropout(p=0.5))
         classifier.append(nn.Linear(in_features=4096, out_features=4096))

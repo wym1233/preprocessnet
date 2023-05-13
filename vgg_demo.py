@@ -1,7 +1,7 @@
 from Model import SE_VGG
 import torch
 
-net=SE_VGG(num_classes=500)
+net=SE_VGG()
 x=torch.rand(2,3,256,448)
 y=net(x)
 print(y["classify_result"].shape)
@@ -12,3 +12,6 @@ print(y["argmax"])
 #         [0.2495]], grad_fn=<ViewBackward0>)
 # tensor([[159],
 #         [301]])
+
+filename = 'D:/bitahubdownload/tmp'+ '.pth'
+torch.save({'model': net.state_dict()}, filename)

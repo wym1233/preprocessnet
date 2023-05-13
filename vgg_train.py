@@ -33,6 +33,8 @@ class OutputConfig():
 class BaseDataset(torch.utils.data.Dataset):
     def __init__(self, data_path):
         self.data_dir = data_path
+        with open(data_path, 'r') as f:
+            self.lines=f.readlines()
 
     def __len__(self):
         return len(self.lines)
@@ -73,11 +75,14 @@ def train(dataloader, model,optim, logger,epoch,logdir):
     lossfunction = nn.MSELoss()
     model.train()
     for batch_step, (images, bpp) in enumerate(dataloader):
-        optim.module.zero_grad()
-        result= model(images)["avevalue"]
+        images=images.to(device)
+        bpp=bpp.float().view(-1).to(device)
+
+        optim.zero_grad()
+        result= model(images)["avevalue"].view(-1)
         mse=lossfunction(bpp,result)
         mse.backward()
-        optim.module.step()
+        optim.step()
 
         absLoss=math.sqrt(mse.item())
 
@@ -98,14 +103,12 @@ def test(dataloader, model, logger, epoch, logdir):
     lossfunction = nn.MSELoss()
     model.eval()
     for batch_step, (images, bpp) in enumerate(dataloader):
-
+        images = images.to(device)
+        bpp = bpp.to(device)
         result = model(images)["avevalue"]
         mse = lossfunction(bpp, result)
-
         absLoss = math.sqrt(mse.item())
-
         writer.add_scalar('scalar/testloss', absLoss, (batch_step + 1 + epoch * len(dataloader)))
-
     logger.info('epoch ' + str(epoch) + ' Testing Done,' + ' Batch step: ' + str(batch_step))
     logger.info('<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<')
     return
@@ -122,12 +125,7 @@ if __name__ == '__main__':
 
     # model
     net=model()
-    if device == 'cuda':
-        net = net.cuda()
-        torch.backends.cudnn.benchmark = True
-    if torch.cuda.device_count() > 1:
-        net = torch.nn.DataParallel(net, device_ids=range(torch.cuda.device_count()))
-        net.to(device)
+    net = net.cuda()
 
     #data
     train_dataset =BaseDataset(args.train_dataset)
@@ -145,16 +143,14 @@ if __name__ == '__main__':
         pin_memory=True,
     )
 
-    optimizer=net.module.getoptimizer(args.lr)
-    optimizer = nn.DataParallel(optimizer, device_ids=range(torch.cuda.device_count()))
-
+    optimizer=net.getoptimizer(args.lr)
     for epoch in range(0, args.epoch):
         train(dataloader=train_dataloader,
               model=net,optim=optimizer,
               logger=logger,epoch=epoch,logdir=training_config.logdir,
               )
         if epoch%5==0:
-            net.module.savemodel(logger=logger,epoch=epoch,path=training_config.ckptdir)
+            net.savemodel(logger=logger,epoch=epoch,path=training_config.ckptdir)
             test(dataloader=test_dataloader,
                  model=net,
                  logger=logger,

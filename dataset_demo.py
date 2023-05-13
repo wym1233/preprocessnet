@@ -14,7 +14,7 @@ class BaseDataset(torch.utils.data.Dataset):
         path, num = line.split(' ')
         num = float(num)
         return path, num
-path='D:/bitahubdownload/bpp_25_test.txt'
+path='D:/bitahubdownload/bpp_25_train.txt'
 dataset=BaseDataset(data_path=path)
 print(dataset.__getitem__(0))
 print(len(dataset))
