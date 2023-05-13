@@ -1,9 +1,19 @@
 import torch
 from torch import nn
 import os
-from torch.cuda.amp import autocast
+# from torch.cuda.amp import autocast
+
+class fc(nn.Module):
+    def __init__(self):
+        super(fc, self).__init__()
+        self.fc1 = nn.Linear(1000, 1, bias=False)
+        self.fc1.weight.requires_grad = False
+        self.fc1.weight.data= torch.linspace(0.001, 1.000, 1000)
+    def forward(self, x):
+        x = self.fc1(x)
+        return x
+
 class SE_VGG(nn.Module):
-    @autocast()
     def __init__(self):
         super().__init__()
         # define an empty for Conv_ReLU_MaxPool
@@ -61,10 +71,12 @@ class SE_VGG(nn.Module):
         classifier.append(nn.Linear(in_features=4096, out_features=4096))
         classifier.append(nn.ReLU())
         classifier.append(nn.Dropout(p=0.5))
-        classifier.append(nn.Linear(in_features=4096, out_features=500))
+        classifier.append(nn.Linear(in_features=4096, out_features=1000))
 
         # add classifier into class property
         self.classifier = nn.Sequential(*classifier)
+
+        self.Fc=fc()
 
 
     def forward(self, x):
@@ -72,12 +84,10 @@ class SE_VGG(nn.Module):
         feature = feature.view(x.size(0), -1)
         classify_result = self.classifier(feature)
 
-        outsoft = torch.softmax(torch.squeeze(classify_result), dim=-1)
-        b = torch.linspace(0, 0.499, 500).to(next(self.parameters()).device)
-        avevalue = torch.sum(outsoft * b, dim=-1)
+        avevalue=self.Fc(classify_result)
         avevalue = avevalue.view(-1, 1)
 
-        argmax=torch.argmax(outsoft,dim=1).view(x.size(0),-1)
+        argmax=torch.argmax(classify_result,dim=1).view(x.size(0),-1)
 
         out = {
             "classify_result": classify_result,

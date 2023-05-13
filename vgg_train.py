@@ -12,9 +12,9 @@ def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--train_dataset", default='/data/wym123/paradata/bpp_25_train.txt')
     parser.add_argument("--test_dataset", default='/data/wym123/paradata/bpp_25_test.txt')
-    parser.add_argument("--batch_size", type=int, default=7)  # train_batch_size
+    parser.add_argument("--batch_size", type=int, default=40)  # train_batch_size
     parser.add_argument("--lr", type=float, default=1e-3)
-    parser.add_argument("--num_workers", type=int, default=2)
+    parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--test_batch_size", type=int, default=1)
     parser.add_argument("--epoch", type=int, default=50)
     args = parser.parse_args()
@@ -78,11 +78,11 @@ def train(dataloader, model,optim, logger,epoch,logdir):
         images=images.to(device)
         bpp=bpp.float().view(-1).to(device)
 
-        optim.zero_grad()
+        optim.module.zero_grad()
         result= model(images)["avevalue"].view(-1)
         mse=lossfunction(bpp,result)
         mse.backward()
-        optim.step()
+        optim.module.step()
 
         absLoss=math.sqrt(mse.item())
 
@@ -125,7 +125,12 @@ if __name__ == '__main__':
 
     # model
     net=model()
-    net = net.cuda()
+    if device == 'cuda':
+        net = net.cuda()
+        torch.backends.cudnn.benchmark = True
+    if torch.cuda.device_count() > 1:
+        net = torch.nn.DataParallel(net, device_ids=range(torch.cuda.device_count()))
+        net.to(device)
 
     #data
     train_dataset =BaseDataset(args.train_dataset)
@@ -143,14 +148,16 @@ if __name__ == '__main__':
         pin_memory=True,
     )
 
-    optimizer=net.getoptimizer(args.lr)
+    optimizer = net.module.getoptimizer(args.lr)
+    optimizer = nn.DataParallel(optimizer, device_ids=range(torch.cuda.device_count()))
+
     for epoch in range(0, args.epoch):
         train(dataloader=train_dataloader,
               model=net,optim=optimizer,
               logger=logger,epoch=epoch,logdir=training_config.logdir,
               )
         if epoch%5==0:
-            net.savemodel(logger=logger,epoch=epoch,path=training_config.ckptdir)
+            net.module.savemodel(logger=logger,epoch=epoch,path=training_config.ckptdir)
             test(dataloader=test_dataloader,
                  model=net,
                  logger=logger,
