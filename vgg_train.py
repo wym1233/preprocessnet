@@ -12,7 +12,7 @@ def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--train_dataset", default='/data/wym123/paradata/bpp_25_train.txt')
     parser.add_argument("--test_dataset", default='/data/wym123/paradata/bpp_25_test.txt')
-    parser.add_argument("--batch_size", type=int, default=20)  # train_batch_size
+    parser.add_argument("--batch_size", type=int, default=7)  # train_batch_size
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--num_workers", type=int, default=2)
     parser.add_argument("--test_batch_size", type=int, default=1)
@@ -33,8 +33,6 @@ class OutputConfig():
 class BaseDataset(torch.utils.data.Dataset):
     def __init__(self, data_path):
         self.data_dir = data_path
-        with open(data_path, 'r') as f:
-            self.lines = f.readlines()
 
     def __len__(self):
         return len(self.lines)
