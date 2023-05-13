@@ -1,108 +1,170 @@
 import os, argparse
-from Model import SE_VGG
-from vgg_trainer import Trainer
 from torchvision import transforms
 from torch.utils.data import DataLoader
 import torch
 from torch import nn
 from PIL import Image
-import random
+import logging
+from torch.utils.tensorboard import SummaryWriter
+from Model import SE_VGG as model
+import math
 def parse_args():
-    parser = argparse.ArgumentParser(
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
-    parser.add_argument("--train_dataset", default='/data/bitahub/vimeo_5/vimeo_train')#'/data/bitahub/vimeo_5/vimeo_train'
-    parser.add_argument("--init_ckpt", default='')#output/epoch_5.pth
-    parser.add_argument("--lr", type=float, default=1e-4)
-    parser.add_argument("--batch_size", type=int, default=7)
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("--train_dataset", default='/data/wym123/paradata/bpp_25_train.txt')
+    parser.add_argument("--test_dataset", default='/data/wym123/paradata/bpp_25_test.txt')
+    parser.add_argument("--batch_size", type=int, default=20)  # train_batch_size
+    parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--num_workers", type=int, default=2)
-    parser.add_argument("--test_dataset", default='/data/bitahub/vimeo_5/vimeo_test')#'/data/bitahub/vimeo_5/vimeo_test'
     parser.add_argument("--test_batch_size", type=int, default=1)
-    parser.add_argument("--epoch", type=int, default=20)
-    # parser.add_argument("--check_time", type=float, default=10,  help='frequency for recording state (min).')
-    parser.add_argument("--prefix", type=str, default='/data', help="prefix of checkpoints/logger, etc. e.g. FactorizedPrior, HyperPrior")
-    # parser.add_argument("--model_name",default="factorized",help="or 'hyperprior' ")
-    # parser.add_argument('--output', default='/output', help='folder to output images and model checkpoints')  # 输出结果保存路径
+    parser.add_argument("--epoch", type=int, default=50)
     args = parser.parse_args()
     return args
 
-class TrainingConfig():
-    def __init__(self, logdir, ckptdir, init_ckpt, lr):
-        self.logdir = logdir
+class OutputConfig():
+    def __init__(self, logdir, ckptdir):
+        self.logdir = logdir#
         if not os.path.exists(self.logdir):
             os.makedirs(self.logdir)
 
         self.ckptdir = ckptdir
         if not os.path.exists(self.ckptdir):
             os.makedirs(self.ckptdir)
-        self.init_ckpt = init_ckpt
-        self.lr = lr
-
 
 class BaseDataset(torch.utils.data.Dataset):
-
-    def __init__(self, data_path, transform=None):
+    def __init__(self, data_path):
         self.data_dir = data_path
-        self.dataset_list = [f for f in os.listdir(self.data_dir) if os.path.isdir(os.path.join(self.data_dir, f))]
-        self.transform = transform
+        with open(data_path, 'r') as f:
+            self.lines = f.readlines()
 
     def __len__(self):
-        return len(self.dataset_list)*7
-
+        return len(self.lines)
 
     def __getitem__(self, idx):
-        a=int(idx/7)
-        b=int(idx%7)
-        Sevenimgsetpath=os.path.join(self.data_dir, self.dataset_list[a])#idx
-        Sevenimgsetlist= os.listdir(Sevenimgsetpath)
-        img_name = Sevenimgsetlist[b]  # random.randint(0,6)
-        try:
-            bpp = float(img_name[4:9])
-        except ValueError:
-            bpp = float(img_name[4:8])
-        bpp=torch.Tensor([int(1000*bpp)])
-        image_path = os.path.join(Sevenimgsetpath, img_name)
-        img = Image.open(image_path).convert("RGB")
-        if self.transform:
-            img = self.transform(img)
-        return img,bpp
+        line=self.lines[idx]
+        path, num = line.split(' ')
+        num = float(num)
+        img = Image.open(path).convert("RGB")
+        img=transforms.ToTensor()(img)
+        return img, num
+
+def getlogger(logdir):
+    logger = logging.getLogger(__name__)
+    logger.setLevel(level = logging.INFO)
+    handler = logging.FileHandler(os.path.join(logdir, 'log.txt'))
+    handler.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s: %(message)s', datefmt='%m/%d %H:%M:%S')
+    handler.setFormatter(formatter)
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    console.setFormatter(formatter)
+    logger.addHandler(handler)
+    logger.addHandler(console)
+    return logger
+
+def setup_seed(seed):
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+
+def train(dataloader, model,optim, logger,epoch,logdir):
+    logger.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+    logger.info('Start Training Epoch: ' + str(epoch))
+    logger.info('Training Files length:' + str(len(dataloader))+' batch')
+    writer = SummaryWriter(logdir)
+
+    lossfunction = nn.MSELoss()
+    model.train()
+    for batch_step, (images, bpp) in enumerate(dataloader):
+        optim.module.zero_grad()
+        result= model(images)["avevalue"]
+        mse=lossfunction(bpp,result)
+        mse.backward()
+        optim.module.step()
+
+        absLoss=math.sqrt(mse.item())
+
+        writer.add_scalar('scalar/trainloss',absLoss, (batch_step + 1 + epoch * len(dataloader)))
+
+        if (batch_step % 5000 == 0):
+            logger.info(str(batch_step + 1) + 'batchsize images have been trained')
+    logger.info('epoch '+str(epoch)+' Training Done,'+' Batch step: ' + str(batch_step))
+    logger.info('<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<')
+    return
+
+
+def test(dataloader, model, logger, epoch, logdir):
+    logger.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+    logger.info('Start Testing Epoch: ' + str(epoch))
+    logger.info('Testing Files length:' + str(len(dataloader)) + ' batch')
+    writer = SummaryWriter(logdir)
+    lossfunction = nn.MSELoss()
+    model.eval()
+    for batch_step, (images, bpp) in enumerate(dataloader):
+
+        result = model(images)["avevalue"]
+        mse = lossfunction(bpp, result)
+
+        absLoss = math.sqrt(mse.item())
+
+        writer.add_scalar('scalar/testloss', absLoss, (batch_step + 1 + epoch * len(dataloader)))
+
+    logger.info('epoch ' + str(epoch) + ' Testing Done,' + ' Batch step: ' + str(batch_step))
+    logger.info('<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<')
+    return
+
 if __name__ == '__main__':
-    # log
+    #config
     args = parse_args()
-    training_config = TrainingConfig(
-                            logdir=os.path.join('/output','logs'),
-                            ckptdir=os.path.join('/output','ckpts'),
-                            init_ckpt=args.init_ckpt,
-                            lr=args.lr, )
+    training_config = OutputConfig(logdir=os.path.join('/output','logs'),
+                                   ckptdir=os.path.join('/data/wym123/paradata','vgg_ckpts'))
+    logger = getlogger(training_config.logdir)
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    setup_seed(1234)
+
     # model
-    model=SE_VGG(num_classes=500)
+    net=model()
+    if device == 'cuda':
+        net = net.cuda()
+        torch.backends.cudnn.benchmark = True
+    if torch.cuda.device_count() > 1:
+        net = torch.nn.DataParallel(net, device_ids=range(torch.cuda.device_count()))
+        net.to(device)
 
-    criterion = nn.CrossEntropyLoss()
-    trainer = Trainer(config=training_config, model=model,criterion=criterion)
-
-    train_dataset =BaseDataset(args.train_dataset,transform=transforms.ToTensor())
-    test_dataset = BaseDataset(args.test_dataset,transform=transforms.ToTensor())
+    #data
+    train_dataset =BaseDataset(args.train_dataset)
     train_dataloader = DataLoader(
         train_dataset,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
-        shuffle=True,
         pin_memory=True,
     )
-
+    test_dataset = BaseDataset(args.test_dataset)
     test_dataloader = DataLoader(
         test_dataset,
         batch_size=args.test_batch_size,
         num_workers=args.num_workers,
-        shuffle=True,
         pin_memory=True,
     )
-    # print(len(train_dataset),len(test_dataset))
-    # print(len(train_dataloader),len(test_dataloader))
 
-    # training
+    optimizer=net.module.getoptimizer(args.lr)
+    optimizer = nn.DataParallel(optimizer, device_ids=range(torch.cuda.device_count()))
+
     for epoch in range(0, args.epoch):
-        trainer.train(train_dataloader)
-        trainer.test(test_dataloader)
-        trainer.epoch+=1
+        train(dataloader=train_dataloader,
+              model=net,optim=optimizer,
+              logger=logger,epoch=epoch,logdir=training_config.logdir,
+              )
+        if epoch%5==0:
+            net.module.savemodel(logger=logger,epoch=epoch,path=training_config.ckptdir)
+            test(dataloader=test_dataloader,
+                 model=net,
+                 logger=logger,
+                 epoch=epoch,
+                 logdir=training_config.logdir)
+
+
+
+
+
 

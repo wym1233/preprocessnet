@@ -1,9 +1,9 @@
 import torch
 from torch import nn
+import os
 class SE_VGG(nn.Module):
-    def __init__(self, num_classes):
+    def __init__(self):
         super().__init__()
-        self.num_classes = num_classes
         # define an empty for Conv_ReLU_MaxPool
         net = []
 
@@ -59,7 +59,7 @@ class SE_VGG(nn.Module):
         classifier.append(nn.Linear(in_features=4096, out_features=4096))
         classifier.append(nn.ReLU())
         classifier.append(nn.Dropout(p=0.5))
-        classifier.append(nn.Linear(in_features=4096, out_features=self.num_classes))
+        classifier.append(nn.Linear(in_features=4096, out_features=500))
 
         # add classifier into class property
         self.classifier = nn.Sequential(*classifier)
@@ -83,3 +83,17 @@ class SE_VGG(nn.Module):
             "argmax": argmax,
         }
         return out
+
+    def getoptimizer(self,lr):
+        params_lr_list = []
+        for module_name in self._modules.keys():
+            params_lr_list.append({"params": self._modules[module_name].parameters(), 'lr': lr})
+        optimizer = torch.optim.Adam(params_lr_list, betas=(0.9, 0.999), lr=lr)
+        return optimizer
+
+    def savemodel(self,logger,epoch,path):
+        logger.info('Saving model...')
+        filename = os.path.join(path, 'bppnet_epoch_' + str(epoch) + '.pth')
+        torch.save({'model': self.state_dict()}, filename)
+        logger.info('Saved as ' + str(filename) + '.pth')
+        return
