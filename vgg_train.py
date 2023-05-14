@@ -44,7 +44,7 @@ class BaseDataset(torch.utils.data.Dataset):
         path, num = line.split(' ')
         num = float(num)
         img = Image.open(path).convert("RGB")
-        img=transforms.ToTensor()(img)
+        img=255*transforms.ToTensor()(img)
         return img, num
 
 def getlogger(logdir):
