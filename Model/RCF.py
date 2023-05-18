@@ -8,7 +8,7 @@ import torch.nn.functional as F
 class RCF(nn.Module):
     def __init__(self, pretrained=None):
         super(RCF, self).__init__()
-        # self.device = torch.device("cpu")
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.conv1_1 = nn.Conv2d(  3,  64, 3, padding=1, dilation=1)
         self.conv1_2 = nn.Conv2d( 64,  64, 3, padding=1, dilation=1)
         self.conv2_1 = nn.Conv2d( 64, 128, 3, padding=1, dilation=1)
@@ -49,10 +49,10 @@ class RCF(nn.Module):
         self.score_dsn5 = nn.Conv2d(21, 1, 1)
         self.score_fuse = nn.Conv2d(5, 1, 1)
 
-        self.weight_deconv2 = self._make_bilinear_weights( 4, 1)
-        self.weight_deconv3 = self._make_bilinear_weights( 8, 1)
-        self.weight_deconv4 = self._make_bilinear_weights(16, 1)
-        self.weight_deconv5 = self._make_bilinear_weights(16, 1)
+        self.weight_deconv2 = self._make_bilinear_weights( 4, 1).to(device)
+        self.weight_deconv3 = self._make_bilinear_weights( 8, 1).to(device)
+        self.weight_deconv4 = self._make_bilinear_weights(16, 1).to(device)
+        self.weight_deconv5 = self._make_bilinear_weights(16, 1).to(device)
 
         # init weights
         self.apply(self._init_weights)
