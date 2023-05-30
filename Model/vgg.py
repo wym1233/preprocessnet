@@ -6,9 +6,9 @@ import os
 class fc(nn.Module):
     def __init__(self):
         super(fc, self).__init__()
-        self.fc1 = nn.Linear(1000, 1, bias=False)
+        self.fc1 = nn.Linear(1500, 1, bias=False)
+        self.fc1.weight.data= torch.linspace(0.001, 1.500, 1500)
         self.fc1.weight.requires_grad = False
-        self.fc1.weight.data= torch.linspace(0.001, 1.000, 1000)
     def forward(self, x):
         x = self.fc1(x)
         return x
@@ -71,7 +71,7 @@ class SE_VGG(nn.Module):
         classifier.append(nn.Linear(in_features=4096, out_features=4096))
         classifier.append(nn.ReLU())
         classifier.append(nn.Dropout(p=0.5))
-        classifier.append(nn.Linear(in_features=4096, out_features=1000))
+        classifier.append(nn.Linear(in_features=4096, out_features=1500))
 
         # add classifier into class property
         self.classifier = nn.Sequential(*classifier)
@@ -100,7 +100,7 @@ class SE_VGG(nn.Module):
         params_lr_list = []
         for module_name in self._modules.keys():
             params_lr_list.append({"params": self._modules[module_name].parameters(), 'lr': lr})
-        optimizer = torch.optim.Adam(params_lr_list, betas=(0.9, 0.999), lr=lr)
+        optimizer = torch.optim.SGD(params_lr_list, lr=lr)
         return optimizer
 
     def savemodel(self,logger,epoch,path):

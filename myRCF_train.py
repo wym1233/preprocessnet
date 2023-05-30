@@ -6,7 +6,7 @@ from torch import nn
 from PIL import Image
 import logging
 from torch.utils.tensorboard import SummaryWriter
-from Model import model1 as model
+from Model import myRCF as model
 import math
 def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -72,7 +72,7 @@ def train(dataloader, model,optim, logger,epoch,logdir):
     logger.info('Training Files length:' + str(len(dataloader))+' batch')
     writer = SummaryWriter(logdir)
 
-    lossfunction = nn.MSELoss()
+    lossfunction = nn.L1Loss()
     model.train()
     for batch_step, (images, bpp) in enumerate(dataloader):
         images=images.to(device)
@@ -80,11 +80,11 @@ def train(dataloader, model,optim, logger,epoch,logdir):
 
         optim.zero_grad()
         result= model(images).view(-1)
-        mse=lossfunction(bpp,result)
-        mse.backward()
+        loss=lossfunction(bpp,result)
+        loss.backward()
         optim.step()
 
-        absLoss=math.sqrt(mse.item())
+        absLoss=loss.item()
 
         writer.add_scalar('scalar/trainloss',absLoss, (batch_step + 1 + epoch * len(dataloader)))
 
@@ -100,14 +100,14 @@ def test(dataloader, model, logger, epoch, logdir):
     logger.info('Start Testing Epoch: ' + str(epoch))
     logger.info('Testing Files length:' + str(len(dataloader)) + ' batch')
     writer = SummaryWriter(logdir)
-    lossfunction = nn.MSELoss()
+    lossfunction = nn.L1Loss()
     model.eval()
     for batch_step, (images, bpp) in enumerate(dataloader):
         images = images.to(device)
         bpp=bpp.float().view(-1).to(device)
         result = model(images).view(-1)
-        mse = lossfunction(bpp, result)
-        absLoss = math.sqrt(mse.item())
+        loss = lossfunction(bpp, result)
+        absLoss = loss.item()
         writer.add_scalar('scalar/testloss', absLoss, (batch_step + 1 + epoch * len(dataloader)))
     logger.info('epoch ' + str(epoch) + ' Testing Done,' + ' Batch step: ' + str(batch_step))
     logger.info('<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<')
@@ -117,14 +117,14 @@ if __name__ == '__main__':
     #config
     args = parse_args()
     training_config = OutputConfig(logdir=os.path.join('/output','logs'),
-                                   ckptdir=os.path.join('/data/wym123/paradata','model1_enhg_ckpts'))
+                                   ckptdir=os.path.join('/data/wym123/paradata','myRCFmodel_ckpts'))
     logger = getlogger(training_config.logdir)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     setup_seed(1234)
 
     # model
-    net=model(initckpt='/data/wym123/paradata/bsds500_pascal_model.pth')
+    net=model()
     net.to(device)
     # if device == 'cuda':
     #     net = net.cuda()

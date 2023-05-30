@@ -9,7 +9,7 @@ def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--train_dataset", default='E:/data/bitahub/vimeo_5/vimeo_train')
     parser.add_argument("--test_dataset", default='E:/data/bitahub/vimeo_5/vimeo_test')
-    parser.add_argument("--batch_size", type=int, default=2)  # train_batch_size
+    parser.add_argument("--batch_size", type=int, default=1)  # train_batch_size
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--num_workers", type=int, default=1)
     parser.add_argument("--test_batch_size", type=int, default=1)
@@ -53,17 +53,17 @@ def train(dataloader, model,optim, epoch):
     print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
     print('Start Training Epoch: ' + str(epoch))
     print('Training Files length:' + str(len(dataloader))+' batch')
-    lossfunction=nn.MSELoss()
+    lossfunction=nn.L1Loss()
     for batch_step, (images, bpp) in enumerate(dataloader):
         optim.zero_grad()
         result= model(images)["avevalue"]
-        print(result.shape)
+        print(result)
         print(bpp)
         mse=lossfunction(bpp,result)
         print(mse)
 
-        mse.backward()
-        optim.step()
+        # mse.backward()
+        # optim.step()
         return
     return
 if __name__ == '__main__':

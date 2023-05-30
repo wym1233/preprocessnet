@@ -12,11 +12,11 @@ def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--train_dataset", default='/data/wym123/paradata/bpp_25_train.txt')
     parser.add_argument("--test_dataset", default='/data/wym123/paradata/bpp_25_test.txt')
-    parser.add_argument("--batch_size", type=int, default=40)  # train_batch_size
-    parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--batch_size", type=int, default=14)  # train_batch_size
+    parser.add_argument("--lr", type=float, default=2e-4)
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--test_batch_size", type=int, default=1)
-    parser.add_argument("--epoch", type=int, default=50)
+    parser.add_argument("--epoch", type=int, default=30)
     args = parser.parse_args()
     return args
 
@@ -43,9 +43,12 @@ class BaseDataset(torch.utils.data.Dataset):
         line=self.lines[idx]
         path, num = line.split(' ')
         num = float(num)
+
+        bpp = round(num * 1000)
+
         img = Image.open(path).convert("RGB")
         img=255*transforms.ToTensor()(img)
-        return img, num
+        return img, bpp
 
 def getlogger(logdir):
     logger = logging.getLogger(__name__)
@@ -72,19 +75,23 @@ def train(dataloader, model,optim, logger,epoch,logdir):
     logger.info('Training Files length:' + str(len(dataloader))+' batch')
     writer = SummaryWriter(logdir)
 
-    lossfunction = nn.MSELoss()
+    lossfunction = nn.CrossEntropyLoss()
     model.train()
+
     for batch_step, (images, bpp) in enumerate(dataloader):
         images=images.to(device)
-        bpp=bpp.float().view(-1).to(device)
+
+        bpp=bpp.view(-1)
+        bpp=bpp.type(torch.LongTensor)
+        bpp=bpp.to(device)
 
         optim.module.zero_grad()
-        result= model(images)["avevalue"].view(-1)
-        mse=lossfunction(bpp,result)
+        result= model(images)["classify_result"]
+        mse=lossfunction(result,bpp)
         mse.backward()
         optim.module.step()
 
-        absLoss=math.sqrt(mse.item())
+        absLoss=mse.item()
 
         writer.add_scalar('scalar/trainloss',absLoss, (batch_step + 1 + epoch * len(dataloader)))
 
@@ -100,15 +107,20 @@ def test(dataloader, model, logger, epoch, logdir):
     logger.info('Start Testing Epoch: ' + str(epoch))
     logger.info('Testing Files length:' + str(len(dataloader)) + ' batch')
     writer = SummaryWriter(logdir)
-    lossfunction = nn.MSELoss()
+    lossfunction = nn.L1Loss()
     model.eval()
     for batch_step, (images, bpp) in enumerate(dataloader):
         images = images.to(device)
         bpp = bpp.to(device)
-        result = model(images)["avevalue"]
-        mse = lossfunction(bpp, result)
-        absLoss = math.sqrt(mse.item())
-        writer.add_scalar('scalar/testloss', absLoss, (batch_step + 1 + epoch * len(dataloader)))
+
+        result = model(images)
+        aveval=result["avevalue"]
+        argmax=result["argmax"]
+
+        mse1 = lossfunction(argmax, bpp).item()
+        mse2 = lossfunction(aveval,bpp).item()
+        writer.add_scalar('scalar/testloss_argmax', mse1, (batch_step + 1 + epoch * len(dataloader)))
+        writer.add_scalar('scalar/testloss_aveval', mse2, (batch_step + 1 + epoch * len(dataloader)))
     logger.info('epoch ' + str(epoch) + ' Testing Done,' + ' Batch step: ' + str(batch_step))
     logger.info('<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<')
     return
@@ -117,7 +129,7 @@ if __name__ == '__main__':
     #config
     args = parse_args()
     training_config = OutputConfig(logdir=os.path.join('/output','logs'),
-                                   ckptdir=os.path.join('/data/wym123/paradata','vgg_ckpts'))
+                                   ckptdir=os.path.join('/data/wym123/paradata','vgg_CrossEntropy_ckpts'))
     logger = getlogger(training_config.logdir)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

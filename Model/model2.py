@@ -1,18 +1,9 @@
 import torch
 from torch import nn
-from Model import RCF
 import os
-class model1(nn.Module):
-    def __init__(self,initckpt='',requiresgrad=False):
-        super(model1, self).__init__()
-
-        self.edge = RCF()
-        if initckpt:
-            self.edge.load_state_dict(torch.load(initckpt))
-        if requiresgrad==False:
-            for (name, param) in self.edge.named_parameters():
-                param.requires_grad = False
-
+class model2(nn.Module):
+    def __init__(self):
+        super(model2, self).__init__()
 
         hiddens = [8, 16, 32, 64]
         net=[]
@@ -45,23 +36,20 @@ class model1(nn.Module):
         self.classifier = nn.Sequential(*classifier)
 
     def forward(self,x):
-        batchsize=x.size(0)
-        x=self.edge(x)[5]
+        x=self.view(-1,)
         feature=self.extract_feature(x).view(batchsize,-1)
         result=self.classifier(feature)
         return result
 
     def getoptimizer(self,lr):
         params_lr_list = []
-        for module_name in self.extract_feature._modules.keys():
-            params_lr_list.append({"params": self.extract_feature._modules[module_name].parameters(), 'lr': lr})
-        for module_name in self.classifier._modules.keys():
-            params_lr_list.append({"params": self.classifier._modules[module_name].parameters(), 'lr': lr})
+        for module_name in self._modules.keys():
+            params_lr_list.append({"params": self._modules[module_name].parameters(), 'lr': lr})
         optimizer = torch.optim.Adam(params_lr_list, betas=(0.9, 0.999), lr=lr)
         return optimizer
 
     def savemodel(self,logger,epoch,path):
-        filename = os.path.join(path, 'model1_epoch_' + str(epoch) + '.pth')
+        filename = os.path.join(path, 'model2_epoch_' + str(epoch) + '.pth')
         torch.save({'model': self.state_dict()}, filename)
         if logger:
             logger.info('Saved as ' + str(filename) + '.pth')

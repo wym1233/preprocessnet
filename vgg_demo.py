@@ -2,10 +2,7 @@ from Model import SE_VGG
 import torch
 
 # net=SE_VGG()
-x=torch.ones(2,3,9,9)
-print(x)
-x=x*255
-print(x)
+
 # y=net(x)
 # print(y["classify_result"].shape)
 # print(y["avevalue"])
