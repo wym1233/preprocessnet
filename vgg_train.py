@@ -111,11 +111,11 @@ def test(dataloader, model, logger, epoch, logdir):
     model.eval()
     for batch_step, (images, bpp) in enumerate(dataloader):
         images = images.to(device)
-        bpp = bpp.to(device)
+        bpp = bpp.to(device).view(-1)
 
         result = model(images)
-        aveval=result["avevalue"]
-        argmax=result["argmax"]
+        aveval=result["avevalue"].view(-1)
+        argmax=result["argmax"].view(-1)
 
         mse1 = lossfunction(argmax, bpp).item()
         mse2 = lossfunction(aveval,bpp).item()
