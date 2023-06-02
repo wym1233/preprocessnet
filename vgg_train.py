@@ -7,7 +7,7 @@ from PIL import Image
 import logging
 from torch.utils.tensorboard import SummaryWriter
 from Model import SE_VGG as model
-#vgg_check_final
+#vgg_check_final1
 def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--train_dataset", default='/data/wym123/paradata/bpp_25_train.txt')
