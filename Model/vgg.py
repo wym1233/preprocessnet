@@ -107,5 +107,5 @@ class SE_VGG(nn.Module):
         logger.info('Saving model...')
         filename = os.path.join(path, 'bppnet_epoch_' + str(epoch) + '.pth')
         torch.save({'model': self.state_dict()}, filename)
-        logger.info('Saved as ' + str(filename) + '.pth')
+        logger.info('Saved as ' + str(filename))
         return

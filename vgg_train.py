@@ -111,11 +111,11 @@ def test(dataloader, model, logger, epoch, logdir):
     model.eval()
     for batch_step, (images, bpp) in enumerate(dataloader):
         images = images.to(device)
-        bpp = bpp.to(device).view(-1)
+        bpp = bpp.to(device).view(-1)/1000
 
         result = model(images)
         aveval=result["avevalue"].view(-1)
-        argmax=result["argmax"].view(-1)
+        argmax=result["argmax"].view(-1)/1000
 
         mse1 = lossfunction(argmax, bpp).item()
         mse2 = lossfunction(aveval,bpp).item()
@@ -164,17 +164,21 @@ if __name__ == '__main__':
     optimizer = nn.DataParallel(optimizer, device_ids=range(torch.cuda.device_count()))
 
     for epoch in range(0, args.epoch):
-        train(dataloader=train_dataloader,
-              model=net,optim=optimizer,
-              logger=logger,epoch=epoch,logdir=training_config.logdir,
-              )
+        if epoch==0:
+            ckpt = torch.load('/data/wym123/paradata/vgg_CrossEntropy_ckpts/bppnet_epoch_0.pth')
+            net.module.load_state_dict(ckpt['model'])
+        else:
+            train(dataloader=train_dataloader,
+                  model=net,optim=optimizer,
+                  logger=logger,epoch=epoch,logdir=training_config.logdir,
+                  )
         if epoch%5==0:
-            net.module.savemodel(logger=logger,epoch=epoch,path=training_config.ckptdir)
             test(dataloader=test_dataloader,
                  model=net,
                  logger=logger,
                  epoch=epoch,
                  logdir=training_config.logdir)
+            net.module.savemodel(logger=logger, epoch=epoch, path=training_config.ckptdir)
 
 
 
