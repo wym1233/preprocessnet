@@ -10,6 +10,7 @@ class fc(nn.Module):
         self.fc1.weight.data= torch.linspace(0.001, 1.500, 1500)
         self.fc1.weight.requires_grad = False
     def forward(self, x):
+        x = torch.softmax(torch.squeeze(x), dim=-1,)
         x = self.fc1(x)
         return x
 
