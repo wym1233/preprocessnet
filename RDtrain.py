@@ -28,9 +28,12 @@ def train(dataloader, model,optim, logger,epoch,logdir):
         loss.backward()
         optim.module.step()
 
+        bppdistortion=torch.mean(bpp/1000)-Rate
+
         writer.add_scalar('scalar/Distortion', distortion.item(), (batch_step + 1 + epoch * len(dataloader)))
         writer.add_scalar('scalar/Rate', Rate.item(), (batch_step + 1 + epoch * len(dataloader)))
         writer.add_scalar('scalar/sumloss', loss.item(), (batch_step + 1 + epoch * len(dataloader)))
+        writer.add_scalar('scalar/bppdistortion', bppdistortion.item(), (batch_step + 1 + epoch * len(dataloader)))
 
         if (batch_step % 5000 == 0):
             logger.info(str(batch_step + 1) + 'batchsize images have been trained')

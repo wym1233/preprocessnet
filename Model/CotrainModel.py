@@ -77,7 +77,7 @@ class CotrainModel(nn.Module):
         # logger.info('Load checkpoint for vgg')
     def forward(self,images):
         images_hat = self.vdsr(images)
-        Rate = torch.mean(self.vgg(images_hat)['avevalue'])
+        Rate = torch.mean(self.vgg(255*images_hat)['avevalue'])
         distortion = torch.mean((images - images_hat) ** 2)
         sumloss = distortion + 1.0 * Rate
         return distortion,Rate,sumloss

@@ -92,8 +92,8 @@ class SE_VGG(nn.Module):
 
         out = {
             "classify_result": classify_result,
-            "avevalue": avevalue,
-            "argmax": argmax,
+            "avevalue": avevalue,#float
+            "argmax": argmax,#int
         }
         return out
 
