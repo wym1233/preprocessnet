@@ -3,7 +3,7 @@ import torch
 from math import sqrt
 from Model import RCF
 import os
-from vgg import SE_VGG
+from Model import SE_VGG
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class Conv_ReLU_Block(nn.Module):
