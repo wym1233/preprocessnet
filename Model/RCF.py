@@ -4,7 +4,6 @@ import numpy as np
 import scipy.io as sio
 import torch.nn.functional as F
 
-
 class RCF(nn.Module):
     def __init__(self, rank, pretrained=None):
         super(RCF, self).__init__()

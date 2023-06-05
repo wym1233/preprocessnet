@@ -1,7 +1,7 @@
 from torch import nn
 import torch
 from math import sqrt
-from RCF import RCF
+from Model import RCF
 import os
 from vgg import SE_VGG
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
