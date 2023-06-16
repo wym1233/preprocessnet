@@ -7,7 +7,7 @@ import torch.nn.functional as F
 class RCF(nn.Module):
     def __init__(self, rank, pretrained=None):
         super(RCF, self).__init__()
-        self.device = torch.device('cuda:{:d}'.format(rank))
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         # self.device = torch.device("cpu")
         self.conv1_1 = nn.Conv2d(  3,  64, 3, padding=1, dilation=1)
         self.conv1_2 = nn.Conv2d( 64,  64, 3, padding=1, dilation=1)

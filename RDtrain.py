@@ -116,7 +116,7 @@ if __name__ == '__main__':
     #config
     args = parse_args()
     training_config = OutputConfig(logdir=os.path.join('/output','logs'),
-                                   ckptdir=os.path.join('/data/wym123/paradata','RDtrainPara'))
+                                   ckptdir=os.path.join('/data/wym123/paradata','RDtrainPara_5'))
     logger = getlogger(training_config.logdir)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -149,7 +149,7 @@ if __name__ == '__main__':
               model=net,optim=optimizer,
               logger=logger,epoch=epoch,logdir=training_config.logdir,
               )
-        if epoch%5==0:
+        if epoch>=1:
             net.module.savemodel(logger=logger,epoch=epoch,path=training_config.ckptdir)
 
 

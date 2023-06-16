@@ -79,7 +79,7 @@ class CotrainModel(nn.Module):
         images_hat = self.vdsr(images)
         Rate = torch.mean(self.vgg(255*images_hat)['avevalue'])
         distortion = torch.mean((images - images_hat) ** 2)
-        sumloss = distortion + 10.0 * Rate
+        sumloss = distortion +(1e-4)*Rate
         return distortion,Rate,sumloss
 
     def getoptimizer(self,lr):
@@ -93,6 +93,6 @@ class CotrainModel(nn.Module):
         logger.info('Saving model...')
         filename = os.path.join(path, 'epoch_' + str(epoch) + '.pth')
         torch.save({'model': self.vdsr.state_dict()}, filename)
-        logger.info('Saved as ' + str(filename) + '.pth')
+        logger.info('Saved as ' + str(filename))
         return
 
