@@ -79,7 +79,7 @@ class CotrainModel(nn.Module):
         images_hat = self.vdsr(images)
         Rate = torch.mean(self.vgg(255*images_hat)['avevalue'])
         distortion = torch.mean((images - images_hat) ** 2)
-        sumloss = distortion +(1e-4)*Rate
+        sumloss = distortion +(1e-3)*Rate
         return distortion,Rate,sumloss
 
     def getoptimizer(self,lr):

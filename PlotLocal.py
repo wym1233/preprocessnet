@@ -12,4 +12,4 @@ print(a)
 # plt.legend()  # 让图例生效
 # plt.show()
 
-print(a[1][0]-a[3][3])
+# print(a[1][0]-a[3][3])
