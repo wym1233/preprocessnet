@@ -190,6 +190,7 @@ if __name__ == '__main__':
     paraGroup['1e-2']='/data/wym123/paradata/RDtrainPara_3/epoch_2.pth'
     paraGroup['1e-6']='/data/wym123/paradata/RDtrainPara_4/epoch_4.pth'
     paraGroup['1e-4']='/data/wym123/paradata/RDtrainPara_5/epoch_5.pth'
+    paraGroup['1e-3']='/data/wym123/paradata/RDtrainPara_6/epoch_3.pth'
 
     # data
     test_dataset = BaseDataset(args.test_dataset)

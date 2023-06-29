@@ -62,8 +62,18 @@
 # l=list(range(1,21,5))
 # print(l)
 
-a='1e-2X'
-b=a[:-1]
-print(a)
-print(b)
-c={}
+# a='1e-2X'
+# b=a[:-1]
+# print(a)
+# print(b)
+# c={}
+
+# import cv2
+# import numpy as np
+# a=np.array([[0,0,1,1],[0,0,1,1],[0,0,1,1],[0,0,1,1]],dtype=float)
+# b=np.array([[0,1,1,0],[0,1,1,0],[0,1,1,0],[0,1,1,0]],dtype=float)
+# print(a)
+# print(cv2.dct(a))
+# print(b)
+# print(cv2.dct(b))
+print([1,2,3,4]+[1,2,3,4])
