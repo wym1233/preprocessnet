@@ -4,6 +4,7 @@ from math import sqrt
 from Model import RCF
 import os
 from Model import SE_VGG
+from Model import ssim
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class Conv_ReLU_Block(nn.Module):
@@ -78,8 +79,8 @@ class CotrainModel(nn.Module):
     def forward(self,images):
         images_hat = self.vdsr(images)
         Rate = torch.mean(self.vgg(255*images_hat)['avevalue'])
-        distortion = nn.L1Loss()(images,images_hat)
-        sumloss = distortion +(1e-4)*Rate
+        distortion =1 - ssim(images,images_hat)
+        sumloss = distortion +(1e-5)*Rate
         return distortion,Rate,sumloss
 
     def getoptimizer(self,lr):
