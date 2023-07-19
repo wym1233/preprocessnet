@@ -176,7 +176,7 @@ if __name__ == '__main__':
     #config
     args = parse_args()
     training_config = OutputConfig(logdir=os.path.join('/output','logs'),
-                                   ckptdir=os.path.join('/data/wym123/paradata','RDVdsrParaTestGroup'))
+                                   ckptdir=os.path.join('/data/wym123/paradata','RDCek1_pltdata'))
     logger = getlogger(training_config.logdir)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -184,13 +184,10 @@ if __name__ == '__main__':
     net = Preprocess()
 
     paraGroup={}
-    paraGroup['10']='/data/wym123/paradata/RDtrainPara/epoch_5.pth'
-    paraGroup['1']='/data/wym123/paradata/RDtrainPara_1/epoch_5.pth'
-    paraGroup['1e-1']='/data/wym123/paradata/RDtrainPara_2/epoch_2.pth'
-    paraGroup['1e-2']='/data/wym123/paradata/RDtrainPara_3/epoch_2.pth'
-    paraGroup['1e-6']='/data/wym123/paradata/RDtrainPara_4/epoch_4.pth'
-    paraGroup['1e-4']='/data/wym123/paradata/RDtrainPara_5/epoch_5.pth'
-    paraGroup['1e-3']='/data/wym123/paradata/RDtrainPara_6/epoch_3.pth'
+    paraGroup['MAE']='/data/wym123/paradata/RDCek1_MAE/epoch_3.pth'
+    paraGroup['1']='/data/wym123/paradata/RDCek1_SSIM/epoch_4.pth'
+    paraGroup['5e-4']='/data/wym123/paradata/RDtrainPara_7/epoch_5.pth'
+
 
     # data
     test_dataset = BaseDataset(args.test_dataset)
@@ -219,7 +216,7 @@ if __name__ == '__main__':
     plotdata['JPGX'] = X
     plotdata['JPGY'] = Y
 
-    name=os.path.join(training_config.ckptdir,'plotdata_lowbpp.pkl')
+    name=os.path.join(training_config.ckptdir, '../Benchmark0/plotdata_lowbpp.pkl')
     with open(name, 'wb') as f:
         pickle.dump(plotdata, f)
 

@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import pickle
-with open('./plotdata_lowbpp.pkl', 'rb') as f:
+with open('plotdata_lowbpp.pkl', 'rb') as f:
     data = pickle.load(f)
 
 

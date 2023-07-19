@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-a=np.load('./Plotdata2_.npy')
+a=np.load('../Plotdata2_.npy')
 a=a.tolist()
 print(a)
 # plt.plot(a[0], a[1],'bx:', label=u'JPEG')

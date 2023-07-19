@@ -12,6 +12,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 import numpy as np
 import time
 import io
+import pickle
 def JpegCompress(img,quality):
     start = time.time()
     tmp = io.BytesIO()
@@ -49,42 +50,68 @@ def compute_psnr(a,b,max_val: float = 255.0):
     psnr=_compute_psnr(a,b,max_val)
     return psnr
 
-def GetRDpointPerImg(img,quality,preprocessmodel):
+import PIL
+def GetRDpointPerImg(img,quality):
 
-    imghat = preprocessmodel(img)
+    out,rec=JpegCompress(img,quality)
+    return out["bpp"],rec
 
-    img=torch.squeeze(img)
-    imghat=torch.squeeze(imghat)
-
-    imghat = transforms.ToPILImage()(imghat)#PIL
-    img = transforms.ToPILImage()(img)#PIL
-
-    out,dec=JpegCompress(img,quality)
-    psnr=compute_psnr(a=img,b=dec)
-
-    outhat, dechat = JpegCompress(imghat, quality)
-    psnrhat=compute_psnr(a=imghat,b=dechat)
-
-    return [out["bpp"],psnr,outhat["bpp"],psnrhat]
-
-def Jpeg_net_RDtest(dataloader, model, JpegQuality,logger,datadir):
+def Preprocess_Jpeg_RD(dataloader, model,Tag, Qualitylist,logger):
     logger.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
-    logger.info('Testing JpegQuality:' + str(JpegQuality))
+    logger.info('Testing Lambda:' + str(Tag))
     logger.info('Testing Files length:' + str(len(dataloader)))
-    assert JpegQuality>=5 and JpegQuality<=95
-    npname=os.path.join(datadir,str(JpegQuality)+'_Qlt.npy')
-    ls=[]
     model.eval()
-    for batch_step, (images, bpp) in enumerate(dataloader):
-        images=images.to(device)
-        result=GetRDpointPerImg(img=images,quality=JpegQuality,preprocessmodel=model)
-        ls.append(result)
-    tmp = np.array(ls)
-    np.save(npname, tmp)
-    plotdata=tmp.mean(axis=0)
-    logger.info(' result savd as '+str(npname))
+    X=[]
+    Y=[]
+    for Q in Qualitylist:
+        lsbpphat=[]
+        lspsnrhat=[]
+        for batch_step, (images, bpp0) in enumerate(dataloader):
+            imghat = model(images)
+
+            if type(images) != PIL.Image.Image:
+                images = torch.squeeze(images)
+                images = transforms.ToPILImage()(images)  # PIL
+            if type(imghat) != PIL.Image.Image:
+                imghat = torch.squeeze(imghat)
+                imghat = transforms.ToPILImage()(imghat)  # PIL
+
+            bpphat, dechat = GetRDpointPerImg(img=imghat, quality=Q)
+            lsbpphat.append(bpphat)
+            psnrhat = compute_psnr(a=images, b=dechat)
+            lspsnrhat.append(psnrhat)
+
+        X.append(sum(lsbpphat)/len(lsbpphat))
+        Y.append(sum(lspsnrhat)/len(lspsnrhat))
     logger.info('<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<')
-    return plotdata
+    return X,Y
+def Jpeg_RD(dataloader, Qualitylist,logger):
+    logger.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+    logger.info('Testing JPEGRD:')
+    logger.info('Testing Files length:' + str(len(dataloader)))
+    X=[]
+    Y=[]
+    for Q in Qualitylist:
+        lsbpphat=[]
+        lspsnrhat=[]
+        for batch_step, (images, bpp0) in enumerate(dataloader):
+            imghat = images
+            if type(images) != PIL.Image.Image:
+                images = torch.squeeze(images)
+                images = transforms.ToPILImage()(images)  # PIL
+            if type(imghat) != PIL.Image.Image:
+                imghat = torch.squeeze(imghat)
+                imghat = transforms.ToPILImage()(imghat)  # PIL
+
+            bpphat, dechat = GetRDpointPerImg(img=imghat, quality=Q)
+            lsbpphat.append(bpphat)
+            psnrhat = compute_psnr(a=images, b=dechat)
+            lspsnrhat.append(psnrhat)
+
+        X.append(sum(lsbpphat)/len(lsbpphat))
+        Y.append(sum(lspsnrhat)/len(lspsnrhat))
+    logger.info('<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<')
+    return X,Y
 
 def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -104,13 +131,15 @@ class OutputConfig():
         if not os.path.exists(self.ckptdir):
             os.makedirs(self.ckptdir)
 
+import random
 
 class BaseDataset(torch.utils.data.Dataset):
     def __init__(self, data_path):
         self.data_dir = data_path
         with open(data_path, 'r') as f:
             self.lines=f.readlines()
-        self.lines=self.lines[0:100]
+        random.seed(1234)
+        self.lines=random.sample(self.lines,50)
 
     def __len__(self):
         return len(self.lines)
@@ -147,21 +176,24 @@ if __name__ == '__main__':
     #config
     args = parse_args()
     training_config = OutputConfig(logdir=os.path.join('/output','logs'),
-                                   ckptdir=os.path.join('/data/wym123/paradata','RDVdsrParaTest5'))
+                                   ckptdir=os.path.join('/data/wym123/paradata','RDVdsrParaTestGroup'))
     logger = getlogger(training_config.logdir)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # model
     net = Preprocess()
-    state_dict_com = torch.load('/data/wym123/paradata/RDtrainPara_5/epoch_2.pth',map_location='cpu')
-    net.load_state_dict(state_dict_com['model'])
-    for (name, param) in net.named_parameters():
-        param.requires_grad = False
-    net=net.to(device)
 
+    paraGroup={}
+    paraGroup['10']='/data/wym123/paradata/RDtrainPara/epoch_5.pth'
+    paraGroup['1']='/data/wym123/paradata/RDtrainPara_1/epoch_5.pth'
+    paraGroup['1e-1']='/data/wym123/paradata/RDtrainPara_2/epoch_2.pth'
+    paraGroup['1e-2']='/data/wym123/paradata/RDtrainPara_3/epoch_2.pth'
+    paraGroup['1e-6']='/data/wym123/paradata/RDtrainPara_4/epoch_4.pth'
+    paraGroup['1e-4']='/data/wym123/paradata/RDtrainPara_5/epoch_5.pth'
+    paraGroup['1e-3']='/data/wym123/paradata/RDtrainPara_6/epoch_3.pth'
 
-    #data
-    test_dataset =BaseDataset(args.test_dataset)
+    # data
+    test_dataset = BaseDataset(args.test_dataset)
     test_dataloader = DataLoader(
         test_dataset,
         batch_size=args.test_batch_size,
@@ -169,21 +201,38 @@ if __name__ == '__main__':
         pin_memory=True,
         shuffle=False
     )
-    X1=[]
-    X2=[]
-    Y1=[]
-    Y2=[]
-    for i in range(5,46,4):
-        q,w,e,r=Jpeg_net_RDtest(dataloader=test_dataloader,model=net,JpegQuality=i,logger=logger,datadir=training_config.ckptdir)
-        X1.append(q)
-        Y1.append(w)
-        X2.append(e)
-        Y2.append(r)
-    pltdata=[X1,Y1,X2,Y2]
 
-    name=os.path.join(training_config.ckptdir,'Plotdata.npy')
-    tmp = np.array(pltdata)
-    np.save(name, tmp)
+    plotdata={}
+    Quality = list(range(1, 21, 1))
+    for key in paraGroup.keys():
+        state_dict_com = torch.load(paraGroup[key],map_location='cpu')
+        net.load_state_dict(state_dict_com['model'])
+        for (name, param) in net.named_parameters():
+            param.requires_grad = False
+        net=net.to(device)
+        X,Y=Preprocess_Jpeg_RD(dataloader=test_dataloader,model=net,Tag=str(key),Qualitylist=Quality,
+                               logger=logger)
+        plotdata[key + 'X'] = X
+        plotdata[key + 'Y'] = Y
+
+    X, Y = Jpeg_RD(dataloader=test_dataloader, Qualitylist=Quality,logger=logger)
+    plotdata['JPGX'] = X
+    plotdata['JPGY'] = Y
+
+    name=os.path.join(training_config.ckptdir, 'plotdata_lowbpp.pkl')
+    with open(name, 'wb') as f:
+        pickle.dump(plotdata, f)
+
+
+
+
+
+
+
+
+
+
+
 
 
 

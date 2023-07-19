@@ -8,7 +8,7 @@ img = transform(img0)
 from Model import Preprocess
 import torch
 net = Preprocess()
-state_dict_com = torch.load('D:/bitahubdownload/VdsrTestPara1e-6.pth', map_location='cpu')
+state_dict_com = torch.load('D:/bitahubdownload/SSIM_cek.pth', map_location='cpu')
 net.load_state_dict(state_dict_com['model'])
 for (name, param) in net.named_parameters():
     param.requires_grad = False
