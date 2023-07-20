@@ -13,6 +13,7 @@ import numpy as np
 import time
 import io
 import pickle
+#针对单张图片复原给定配置下的训练过程，实时监测真实码率变化
 def JpegCompress(img,quality):
     start = time.time()
     tmp = io.BytesIO()
