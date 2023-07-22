@@ -6,7 +6,7 @@ import torch
 from torch import nn
 from PIL import Image
 import logging
-from Model import CotrainModel
+from Model import CotrainModelDifJpg
 import torch
 from torch.utils.tensorboard import SummaryWriter
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -28,12 +28,10 @@ def train(dataloader, model,optim, logger,epoch,logdir):
         loss.backward()
         optim.module.step()
 
-        bppdistortion=torch.mean(bpp/1000)-Rate
 
         writer.add_scalar('scalar/Distortion', distortion.item(), (batch_step + 1 + epoch * len(dataloader)))
         writer.add_scalar('scalar/Rate', Rate.item(), (batch_step + 1 + epoch * len(dataloader)))
         writer.add_scalar('scalar/sumloss', loss.item(), (batch_step + 1 + epoch * len(dataloader)))
-        writer.add_scalar('scalar/bppdistortion', bppdistortion.item(), (batch_step + 1 + epoch * len(dataloader)))
 
         if (batch_step % 5000 == 0):
             logger.info(str(batch_step + 1) + 'batchsize images have been trained')
@@ -116,7 +114,7 @@ if __name__ == '__main__':
     #config
     args = parse_args()
     training_config = OutputConfig(logdir=os.path.join('/output','logs'),
-                                   ckptdir=os.path.join('/data/wym123/paradata','RDtrainPara_7'))
+                                   ckptdir=os.path.join('/data/wym123/paradata','diffjpeg_cek1'))
     logger = getlogger(training_config.logdir)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -124,7 +122,7 @@ if __name__ == '__main__':
     setup_seed(1234)
 
     # model
-    net=CotrainModel()
+    net=CotrainModelDifJpg()
     if device == 'cuda':
         net = net.cuda()
         torch.backends.cudnn.benchmark = True

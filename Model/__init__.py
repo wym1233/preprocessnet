@@ -4,3 +4,5 @@ from .SSIM import SSIM
 from .SSIM import ssim
 from .CotrainModel import CotrainModel
 from .CotrainModel import Preprocess
+from .Vdsr import VDSR
+from .CotrainModel_diffjpeg import CotrainModelDifJpg
