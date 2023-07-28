@@ -25,7 +25,9 @@ def train(dataloader, model,optim, logger,epoch,logdir):
         Rate=torch.mean(Rate)
         loss=torch.mean(loss)
 
+        torch.nn.utils.clip_grad_norm(parameters=model.parameters(), max_norm=4, norm_type=2)
         loss.backward()
+
         optim.module.step()
 
 
@@ -46,7 +48,7 @@ def parse_args():
     parser.add_argument("--train_dataset", default='/data/wym123/paradata/bpp_25_train.txt')
     parser.add_argument("--test_dataset", default='/data/wym123/paradata/bpp_25_test.txt')
     parser.add_argument("--batch_size", type=int, default=20)  # train_batch_size
-    parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--test_batch_size", type=int, default=1)
     parser.add_argument("--epoch", type=int, default=30)
@@ -114,7 +116,7 @@ if __name__ == '__main__':
     #config
     args = parse_args()
     training_config = OutputConfig(logdir=os.path.join('/output','logs'),
-                                   ckptdir=os.path.join('/data/wym123/paradata','diffjpeg_cek1'))
+                                   ckptdir=os.path.join('/data/wym123/paradata','diffjpeg_cek2'))
     logger = getlogger(training_config.logdir)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -147,7 +149,7 @@ if __name__ == '__main__':
               model=net,optim=optimizer,
               logger=logger,epoch=epoch,logdir=training_config.logdir,
               )
-        if epoch>=1:
+        if epoch%3==0:
             net.module.savemodel(logger=logger,epoch=epoch,path=training_config.ckptdir)
 
 

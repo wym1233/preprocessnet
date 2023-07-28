@@ -26,13 +26,14 @@ class CotrainModelDifJpg(nn.Module):
 
     def forward(self,images):
         images_hat = self.vdsr(images)
+        images_hat=torch.clamp(images_hat,0,1)
 
         Rate = torch.mean(self.vgg(255 * images_hat)['avevalue'])
 
         images_hat_=self.difjpeg(images_hat)
         distortion = torch.mean((images - images_hat_) ** 2)
 
-        sumloss = distortion + (5e-4) * Rate
+        sumloss = distortion + (0.01) * Rate
         return distortion, Rate, sumloss
 
     def getoptimizer(self,lr):

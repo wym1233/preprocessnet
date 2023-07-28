@@ -6,13 +6,14 @@ import torch
 from torch import nn
 from PIL import Image
 import logging
-from Model import Preprocess
+from Model import VDSR
 import torch
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 import numpy as np
 import time
 import io
 import pickle
+#针对单张图片复原给定配置下的训练过程，实时监测真实码率变化
 def JpegCompress(img,quality):
     start = time.time()
     tmp = io.BytesIO()
@@ -68,6 +69,7 @@ def Preprocess_Jpeg_RD(dataloader, model,Tag, Qualitylist,logger):
         lspsnrhat=[]
         for batch_step, (images, bpp0) in enumerate(dataloader):
             imghat = model(images)
+            imghat=torch.clamp(imghat,0,1)
 
             if type(images) != PIL.Image.Image:
                 images = torch.squeeze(images)
@@ -181,13 +183,10 @@ if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # model
-    net = Preprocess()
+    net = VDSR()
 
     paraGroup={}
-    paraGroup['MAE']='/data/wym123/paradata/RDCek1_MAE/epoch_3.pth'
-    paraGroup['1']='/data/wym123/paradata/RDCek1_SSIM/epoch_4.pth'
-    paraGroup['5e-4']='/data/wym123/paradata/RDtrainPara_7/epoch_5.pth'
-
+    paraGroup['diffJPEG']='/data/wym123/paradata/diffjpeg_cek1/epoch_7.pth'
 
     # data
     test_dataset = BaseDataset(args.test_dataset)
@@ -200,7 +199,7 @@ if __name__ == '__main__':
     )
 
     plotdata={}
-    Quality = list(range(1, 21, 1))
+    Quality = list(range(20,30,1))
     for key in paraGroup.keys():
         state_dict_com = torch.load(paraGroup[key],map_location='cpu')
         net.load_state_dict(state_dict_com['model'])
@@ -216,7 +215,7 @@ if __name__ == '__main__':
     plotdata['JPGX'] = X
     plotdata['JPGY'] = Y
 
-    name=os.path.join(training_config.ckptdir, '../Benchmark0/plotdata_lowbpp.pkl')
+    name=os.path.join(training_config.ckptdir, 'diffJPEG_ep7clp_pltdata.pkl')
     with open(name, 'wb') as f:
         pickle.dump(plotdata, f)
 
