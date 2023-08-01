@@ -1,10 +1,10 @@
 import matplotlib.pyplot as plt
 import pickle
-with open('./diffJPEG_ep7clp_pltdata.pkl', 'rb') as f:
+with open('./Cek2/pltdata5.pkl', 'rb') as f:
     data = pickle.load(f)
 
 paraGroup = {}
-paraGroup['diffJPEG']='/data/wym123/paradata/diffjpeg_cek1/epoch_7.pth'
+paraGroup['diffJPEG'] = '/data/wym123/paradata/diffjpeg_cek2/epoch_6.pth'
 
 ls=list(paraGroup.keys())
 ls.reverse()
