@@ -13,7 +13,6 @@ import numpy as np
 import time
 import io
 import pickle
-#针对单张图片复原给定配置下的训练过程，实时监测真实码率变化
 def JpegCompress(img,quality):
     start = time.time()
     tmp = io.BytesIO()
@@ -186,7 +185,12 @@ if __name__ == '__main__':
     net = VDSR()
 
     paraGroup={}
-    paraGroup['diffJPEG']='/data/wym123/paradata/diffjpeg_cek2/Lr1e_4/epoch_2.pth'
+    paraGroup['SGD_1e-3_1e-3']='/data/wym123/paradata/diffjpeg_cek2/SGD/epoch_3.pth'
+    paraGroup['Lr1e-5_1e-4'] = '/data/wym123/paradata/diffjpeg_cek2/Lr1e_4/epoch_2.pth'
+    paraGroup['Lr1e-4_1e-3'] = '/data/wym123/paradata/diffjpeg_cek2/Lr1e_3/epoch_3.pth'
+    paraGroup['Lr1e-4_1e-2'] = '/data/wym123/paradata/diffjpeg_cek2/epoch_6.pth'
+
+
 
     # data
     test_dataset = BaseDataset(args.test_dataset)
@@ -199,7 +203,7 @@ if __name__ == '__main__':
     )
 
     plotdata={}
-    Quality = list(range(20,30,1))
+    Quality = list(range(5,25,2))
     for key in paraGroup.keys():
         state_dict_com = torch.load(paraGroup[key],map_location='cpu')
         net.load_state_dict(state_dict_com['model'])
@@ -215,7 +219,7 @@ if __name__ == '__main__':
     plotdata['JPGX'] = X
     plotdata['JPGY'] = Y
 
-    name=os.path.join(training_config.ckptdir, 'pltdata5.pkl')
+    name=os.path.join(training_config.ckptdir, 'pltdata8.pkl')
     with open(name, 'wb') as f:
         pickle.dump(plotdata, f)
 

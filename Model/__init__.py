@@ -1,5 +1,6 @@
 from .vgg import SE_VGG
 from .RCF import RCF
+from .wdsr import MODEL
 from .SSIM import SSIM
 from .SSIM import ssim
 from .CotrainModel import CotrainModel

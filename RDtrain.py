@@ -47,8 +47,8 @@ def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--train_dataset", default='/data/wym123/paradata/bpp_25_train.txt')
     parser.add_argument("--test_dataset", default='/data/wym123/paradata/bpp_25_test.txt')
-    parser.add_argument("--batch_size", type=int, default=20)  # train_batch_size
-    parser.add_argument("--lr", type=float, default=1e-5)
+    parser.add_argument("--batch_size", type=int, default=3)  # train_batch_size
+    parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--test_batch_size", type=int, default=1)
     parser.add_argument("--epoch", type=int, default=30)
@@ -116,7 +116,7 @@ if __name__ == '__main__':
     #config
     args = parse_args()
     training_config = OutputConfig(logdir=os.path.join('/output','logs'),
-                                   ckptdir=os.path.join('/data/wym123/paradata/diffjpeg_cek2','Lr1e_4'))
+                                   ckptdir=os.path.join('/data/wym123/paradata/diffjpeg_cek2','WDSR'))
     logger = getlogger(training_config.logdir)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -149,8 +149,7 @@ if __name__ == '__main__':
               model=net,optim=optimizer,
               logger=logger,epoch=epoch,logdir=training_config.logdir,
               )
-        if epoch%2==0:
-            net.module.savemodel(logger=logger,epoch=epoch,path=training_config.ckptdir)
+        net.module.savemodel(logger=logger,epoch=epoch,path=training_config.ckptdir)
 
 
 

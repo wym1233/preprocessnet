@@ -76,4 +76,4 @@
 # print(cv2.dct(a))
 # print(b)
 # print(cv2.dct(b))
-print([1,2,3,4]+[1,2,3,4])
+print([1.2]*4)

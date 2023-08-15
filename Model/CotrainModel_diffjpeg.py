@@ -33,14 +33,14 @@ class CotrainModelDifJpg(nn.Module):
         images_hat_=self.difjpeg(images_hat)
         distortion = torch.mean((images - images_hat_) ** 2)
 
-        sumloss = distortion + (1e-4) * Rate
+        sumloss = distortion
         return distortion, Rate, sumloss
 
     def getoptimizer(self,lr):
         params_lr_list = []
         for module_name in self.vdsr._modules.keys():
             params_lr_list.append({"params": self.vdsr._modules[module_name].parameters(), 'lr': lr})
-        optimizer = torch.optim.Adam(params_lr_list, betas=(0.9, 0.999), lr=lr)
+        optimizer = torch.optim.SGD(params=params_lr_list,lr=lr)
         return optimizer
 
     def savemodel(self,logger,epoch,path):
