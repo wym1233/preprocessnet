@@ -13,8 +13,8 @@
 # q,w,e,r=ll()
 # print(q,)
 
-# import PIL
-# import torch
+import PIL
+import torch
 # from PIL import Image
 # from torchvision import transforms
 # img_path='E:/vimeo/vimeo_test/33/im1.png'
@@ -76,4 +76,9 @@
 # print(cv2.dct(a))
 # print(b)
 # print(cv2.dct(b))
-print([1.2]*4)
+#
+# z={"rec":123}
+# print(z["rec"])
+
+a='asd'
+print(str(a))

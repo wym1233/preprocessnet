@@ -1,7 +1,6 @@
 from torch import nn
 import torch
 from math import sqrt
-from Model import RCF
 import os
 from Model import SE_VGG
 

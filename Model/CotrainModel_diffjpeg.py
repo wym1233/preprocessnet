@@ -2,7 +2,7 @@ from torch import nn
 import torch
 import os
 
-from Model import VDSR
+from Model import SmoothNet
 from diffJPEG import JPEG
 from Model import SE_VGG
 
@@ -12,25 +12,29 @@ class CotrainModelDifJpg(nn.Module):
     def __init__(self):
         super(CotrainModelDifJpg, self).__init__()
 
-        self.vdsr = VDSR()
+        self.vdsr = SmoothNet()
 
-        self.vgg = SE_VGG()
-        ckpt = torch.load('/data/wym123/paradata/vgg_CrossEntropy_ckpts/bppnet_epoch_25.pth')
-        self.vgg.load_state_dict(ckpt['model'])
-        for (name, param) in self.vgg.named_parameters():
-            param.requires_grad = False
+        # self.vgg = SE_VGG()
+        # ckpt = torch.load('/data/wym123/paradata/vgg_CrossEntropy_ckpts/bppnet_epoch_25.pth')
+        # self.vgg.load_state_dict(ckpt['model'])
+        # for (name, param) in self.vgg.named_parameters():
+        #     param.requires_grad = False
 
         self.difjpeg=JPEG(height=256, width=448, quality=25)
         for (name, param) in self.difjpeg.named_parameters():
             param.requires_grad = False
 
-    def forward(self,images):
+    def forward(self,images,pretrain=False):
         images_hat = self.vdsr(images)
         images_hat=torch.clamp(images_hat,0,1)
 
-        Rate = torch.mean(self.vgg(255 * images_hat)['avevalue'])
+        # Rate = torch.mean(self.vgg(255 * images_hat)['avevalue'])
+        Rate=None
 
-        images_hat_=self.difjpeg(images_hat)
+        if pretrain:
+            images_hat_=images_hat
+        else:
+            images_hat_=self.difjpeg(images_hat)
         distortion = torch.mean((images - images_hat_) ** 2)
 
         sumloss = distortion

@@ -1,5 +1,6 @@
+from .DemoProcessModel import SmoothNet
+from .Deamnet import Deam
 from .vgg import SE_VGG
-from .RCF import RCF
 from .wdsr import MODEL
 from .SSIM import SSIM
 from .SSIM import ssim

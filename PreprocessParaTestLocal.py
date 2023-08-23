@@ -27,28 +27,33 @@ from torchvision import transforms
 
 # da=BaseDataset(data_path='D:/bitahubdownload/bpp_25_test.txt')
 # img0=da.__getitem__(idx=1)
-img_path='E:/vimeo/vimeo_test/86/im5.png'
+img_path='E:/vimeo/vimeo_test/542/im7.png'
 img0=Image.open(img_path).convert("RGB")
 
 
 transform=transforms.ToTensor()
 img = transform(img0)
+img=img.unsqueeze(dim=0)
 
-from Model import VDSR
+from Model import SmoothNet
 import torch
-net = VDSR()
-state_dict_com = torch.load('D:/bitahubdownload/dfJPEG_sin_Cek1.pth', map_location='cpu')
+net = SmoothNet()
+state_dict_com = torch.load('D:/bitahubdownload/epoch_smoothnet_pretrain.pth', map_location='cpu')
 net.load_state_dict(state_dict_com['model'])
 for (name, param) in net.named_parameters():
     param.requires_grad = False
 
-imghat=net(img)
+imghat=net(img).squeeze()
 
-imghat_pil = transforms.ToPILImage()(imghat)#PIL
+img_before_clamp=transforms.ToPILImage()(imghat)
+
+imghat=torch.clamp(imghat,0,1)
+img_after_clamp = transforms.ToPILImage()(imghat)#PIL
 
 
-img0.save('E:/tmp/1.png')
-imghat_pil.save('E:/tmp/2.png')
+img0.save('E:/tmp/3.png')
+img_before_clamp.save('E:/tmp/4.png')
+img_after_clamp.save('E:/tmp/5.png')
 
 import time
 import io
@@ -78,8 +83,8 @@ def getrd(img,quality):
     loss=torch.mean((img-rec)**2)
     print(loss,bpp)
     return
-getrd(img0,25)
-getrd(imghat_pil,25)
+# getrd(img0,25)
+# getrd(imghat_pil,25)
 
 
 
